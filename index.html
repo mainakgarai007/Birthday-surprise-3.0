@@ -222,8 +222,18 @@
                     
                     animationStep++;
                 }
-                // Step 4: Show text
+                // Step 4: Show text and keep tree/flowers visible
                 else if (!flowersDrawn) {
+                    // Keep drawing tree and flowers
+                    drawBranch(heart.x, height - 100, heart.x, height - 530, 30);
+                    drawBranch(heart.x, height - 200, heart.x - 150, height - 300, 15);
+                    drawBranch(heart.x, height - 250, heart.x + 180, height - 380, 12);
+                    
+                    // Draw all flowers
+                    for (var i = 0; i < flowers.length; i++) {
+                        drawFlower(flowers[i].x, flowers[i].y, flowers[i].radius, flowers[i].color);
+                    }
+                    
                     flowersDrawn = true;
                     document.getElementById('code').style.display = 'block';
                     typeWriter();
