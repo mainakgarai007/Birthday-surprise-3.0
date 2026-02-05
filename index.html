@@ -56,7 +56,7 @@
 </head>
 <body>
     <div id="main">
-        <audio autoplay loop id="myAudio">
+        <audio loop id="myAudio">
             <source src="aud.mp3" type="audio/mpeg">
         </audio>
         <div id="wrap">
@@ -150,6 +150,7 @@
             var flowersDrawn = false;
             var textIndex = 0;
             var textContent = document.getElementById('code').innerHTML;
+            var flowers = []; // Store flower positions to prevent flickering
             
             // Main animation loop
             function animate() {
@@ -200,16 +201,23 @@
                     drawBranch(heart.x, height - 200, heart.x - 150, height - 300, 15);
                     drawBranch(heart.x, height - 250, heart.x + 180, height - 380, 12);
                     
-                    // Add flowers gradually
-                    var flowerCount = Math.floor((animationStep - 300) / 2);
-                    for (var i = 0; i < flowerCount && i < 50; i++) {
-                        var fx = 50 + Math.random() * (width - 100);
-                        var fy = 50 + Math.random() * (height - 100);
-                        var color = 'rgba(' + 
-                            Math.floor(128 + Math.random() * 127) + ',' +
-                            Math.floor(Math.random() * 128) + ',' +
-                            Math.floor(Math.random() * 128) + ',0.3)';
-                        drawFlower(fx, fy, 8 + Math.random() * 4, color);
+                    // Generate flowers once and store them
+                    var targetFlowerCount = Math.floor((animationStep - 300) / 2);
+                    while (flowers.length < targetFlowerCount && flowers.length < 50) {
+                        flowers.push({
+                            x: 50 + Math.random() * (width - 100),
+                            y: 50 + Math.random() * (height - 100),
+                            radius: 8 + Math.random() * 4,
+                            color: 'rgba(' + 
+                                Math.floor(128 + Math.random() * 127) + ',' +
+                                Math.floor(Math.random() * 128) + ',' +
+                                Math.floor(Math.random() * 128) + ',0.3)'
+                        });
+                    }
+                    
+                    // Draw all stored flowers
+                    for (var i = 0; i < flowers.length; i++) {
+                        drawFlower(flowers[i].x, flowers[i].y, flowers[i].radius, flowers[i].color);
                     }
                     
                     animationStep++;
@@ -282,15 +290,17 @@
             }
             
             // Click to start
-            canvas.addEventListener('click', function() {
+            function startAnimation() {
                 var audio = document.getElementById('myAudio');
                 audio.play().catch(function() {
                     // Audio play might be blocked by browser
                 });
                 canvas.style.cursor = 'default';
                 animate();
-                canvas.removeEventListener('click', arguments.callee);
-            });
+                canvas.removeEventListener('click', startAnimation);
+            }
+            
+            canvas.addEventListener('click', startAnimation);
             
             canvas.style.cursor = 'pointer';
             drawHeart(heart.x, heartY, heartSize, heart.color);
