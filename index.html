@@ -1,31 +1,63 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>HBD love</title>	    
-    <link type="text/css" rel="stylesheet" href="file/default.css">
-    <script type="text/javascript" src="file/jquery.min.js"></script>
-    <script type="text/javascript" src="file/jscex.min.js"></script>
-    <script type="text/javascript" src="file/jscex-parser.js"></script>
-    <script type="text/javascript" src="file/jscex-jit.js"></script>
-    <script type="text/javascript" src="file/jscex-builderbase.min.js"></script>
-    <script type="text/javascript" src="file/jscex-async.min.js"></script>
-    <script type="text/javascript" src="file/jscex-async-powerpack.min.js"></script>
-    <script type="text/javascript" src="file/function.js" charset="utf-8"></script>
-    <script type="text/javascript" src="file/love.js" charset="utf-8"></script>
-    <script>
-        function playAudio() {
-            var audio = document.getElementById("myAudio");
-            audio.play();
+    <meta charset="UTF-8">
+    <title>HBD love</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body { 
+            font: 12px "Helvetica Neue", Helvetica, "Microsoft YaHei", Arial, sans-serif; 
+            background: #000; 
+            color: #333; 
+            overflow: hidden;
         }
-    </script>
+        #main { width: 100%; }
+        #wrap { 
+            position: relative; 
+            margin: 0 auto; 
+            width: 1100px; 
+            height: 680px; 
+            margin-top: 10px; 
+        }
+        #text { 
+            width: 400px; 
+            height: 425px; 
+            left: 60px; 
+            top: 80px; 
+            position: absolute; 
+        }
+        #code { 
+            display: none; 
+            font-size: 16px; 
+            color: #666; 
+        }
+        #clock-box { 
+            position: absolute; 
+            left: 60px; 
+            top: 550px; 
+            font-size: 28px; 
+            display: none; 
+            color: #666; 
+        }
+        #clock { margin-left: 48px; }
+        #canvas { 
+            margin: 0 auto; 
+            width: 1100px; 
+            height: 680px; 
+        }
+        .hand { cursor: pointer; }
+        .say { 
+            margin-left: 5px; 
+            color: #666; 
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
     <div id="main">
-        <div id="error"><a href="http://www.google.cn/chrome/intl/zh-CN/landing_chrome.html?hl=zh-CN&brand=CHMI">Chrome</a> (<a href="http://firefox.com.cn/download/">Firefox</a>)</div>
-        <audio autoplay="autoplay" height="100" width="100" id="myAudio">
-            <source src="aud.mp3" type="audio/mp3" />
-            <embed height="100" width="100" src="aud.mp3" />
+        <audio loop id="myAudio">
+            <source src="aud.mp3" type="audio/mpeg">
         </audio>
         <div id="wrap">
             <div id="text">
@@ -40,144 +72,239 @@
                 </div>
             </div>
             <div id="clock-box">
-                <span id="clock">577 days 0 hours 0 minutes 0 seconds</span> <!-- Change to "6940 days..." if needed -->
+                <span id="clock">577 days 0 hours 0 minutes 0 seconds</span>
             </div>
             <canvas id="canvas" width="1100" height="680"></canvas>
         </div>
     </div>
 
     <script>
-    (function() {
-        var canvas = $('#canvas');
-		
-        if (!canvas[0].getContext) {
-            $("#error").show();
-            return false;
-        }
-
-        var width = canvas.width();
-        var height = canvas.height();        
-        canvas.attr("width", width);
-        canvas.attr("height", height);
-
-        var opts = {
-            seed: {
+        // Simple animation without external dependencies
+        (function() {
+            var canvas = document.getElementById('canvas');
+            var ctx = canvas.getContext('2d');
+            var width = canvas.width;
+            var height = canvas.height;
+            
+            // Heart seed at bottom center
+            var heart = {
                 x: width / 2 - 20,
-                color: "rgb(190, 26, 37)",
+                y: height,
+                size: 35,
+                color: 'rgb(190, 26, 37)',
                 scale: 2
-            },
-            branch: [
-                [535, 680, 570, 250, 500, 200, 30, 100, [
-                    [540, 500, 455, 417, 340, 400, 13, 100, [
-                        [450, 435, 434, 430, 394, 395, 2, 40]
-                    ]],
-                    [550, 445, 600, 356, 680, 345, 12, 100, [
-                        [578, 400, 648, 409, 661, 426, 3, 80]
-                    ]],
-                    [539, 281, 537, 248, 534, 217, 3, 40],
-                    [546, 397, 413, 247, 328, 244, 9, 80, [
-                        [427, 286, 383, 253, 371, 205, 2, 40],
-                        [498, 345, 435, 315, 395, 330, 4, 60]
-                    ]],
-                    [546, 357, 608, 252, 678, 221, 6, 100, [
-                        [590, 293, 646, 277, 648, 271, 2, 80]
-                    ]]
-                ]] 
-            ],
-            bloom: {
-                num: 700,
-                width: 1080,
-                height: 650,
-            },
-            footer: {
-                width: 1200,
-                height: 5,
-                speed: 10,
+            };
+            
+            // Draw heart shape
+            function drawHeart(x, y, size, color) {
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 3;
+                ctx.translate(x, y);
+                ctx.scale(1, -1);
+                ctx.beginPath();
+                ctx.arc(0, 0, size/2, Math.PI, Math.PI * 2);
+                ctx.arc(-size, 0, size/2, 0, Math.PI);
+                ctx.lineTo(0, -size * 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
             }
-        }
-
-        var tree = new Tree(canvas[0], width, height, opts);
-        var seed = tree.seed;
-        var foot = tree.footer;
-        var hold = 1;
-
-        canvas.click(function(e) {
-            playAudio();
-            var offset = canvas.offset(), x, y;
-            x = e.pageX - offset.left;
-            y = e.pageY - offset.top;
-            if (seed.hover(x, y)) {
-                hold = 0; 
-                canvas.unbind("click");
-                canvas.unbind("mousemove");
-                canvas.removeClass('hand');
+            
+            // Draw tree branch
+            function drawBranch(x1, y1, x2, y2, width) {
+                ctx.save();
+                ctx.strokeStyle = 'rgb(35, 31, 32)';
+                ctx.shadowColor = 'rgb(35, 31, 32)';
+                ctx.shadowBlur = 2;
+                ctx.lineWidth = width;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.restore();
             }
-        }).mousemove(function(e) {
-            var offset = canvas.offset(), x, y;
-            x = e.pageX - offset.left;
-            y = e.pageY - offset.top;
-            canvas.toggleClass('hand', seed.hover(x, y));
-        });
-
-        var seedAnimate = eval(Jscex.compile("async", function () {
-            seed.draw();
-            while (hold) {
-                $await(Jscex.Async.sleep(10));
+            
+            // Draw flower
+            function drawFlower(x, y, radius, color) {
+                var petals = 8;
+                for (var i = 0; i < petals; i++) {
+                    var angle = (Math.PI * 2 / petals) * i;
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(angle);
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.ellipse(0, radius/2, radius/3, radius/2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
             }
-            while (seed.canScale()) {
-                seed.scale(0.95);
-                $await(Jscex.Async.sleep(10));
+            
+            // Animation state
+            var animationStep = 0;
+            var heartY = height;
+            var heartSize = 35 * 2;
+            var treeGrown = false;
+            var flowersDrawn = false;
+            var textIndex = 0;
+            var textContent = document.getElementById('code').innerHTML;
+            var flowers = []; // Store flower positions to prevent flickering
+            
+            // Main animation loop
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                
+                // Step 1: Shrink and move heart
+                if (animationStep < 100) {
+                    var scale = 1 - (animationStep / 100) * 0.8;
+                    drawHeart(heart.x, heartY, heartSize * scale, heart.color);
+                    heartY -= 2;
+                    animationStep++;
+                }
+                // Step 2: Grow tree
+                else if (animationStep < 300) {
+                    var progress = (animationStep - 100) / 200;
+                    
+                    // Main trunk
+                    var trunkHeight = 430 * progress;
+                    drawBranch(heart.x, height - 100, heart.x, height - 100 - trunkHeight, 30);
+                    
+                    if (progress > 0.3) {
+                        // Left branch
+                        var leftProgress = (progress - 0.3) / 0.7;
+                        drawBranch(heart.x, height - 200, 
+                                   heart.x - 150 * leftProgress, 
+                                   height - 300 * leftProgress, 
+                                   15);
+                    }
+                    
+                    if (progress > 0.5) {
+                        // Right branch
+                        var rightProgress = (progress - 0.5) / 0.5;
+                        drawBranch(heart.x, height - 250, 
+                                   heart.x + 180 * rightProgress, 
+                                   height - 380 * rightProgress, 
+                                   12);
+                    }
+                    
+                    animationStep++;
+                    if (animationStep === 300) {
+                        treeGrown = true;
+                    }
+                }
+                // Step 3: Add flowers
+                else if (animationStep < 400 && treeGrown) {
+                    // Redraw tree
+                    drawBranch(heart.x, height - 100, heart.x, height - 530, 30);
+                    drawBranch(heart.x, height - 200, heart.x - 150, height - 300, 15);
+                    drawBranch(heart.x, height - 250, heart.x + 180, height - 380, 12);
+                    
+                    // Generate flowers once and store them
+                    var targetFlowerCount = Math.floor((animationStep - 300) / 2);
+                    while (flowers.length < targetFlowerCount && flowers.length < 50) {
+                        flowers.push({
+                            x: 50 + Math.random() * (width - 100),
+                            y: 50 + Math.random() * (height - 100),
+                            radius: 8 + Math.random() * 4,
+                            color: 'rgba(' + 
+                                Math.floor(128 + Math.random() * 127) + ',' +
+                                Math.floor(Math.random() * 128) + ',' +
+                                Math.floor(Math.random() * 128) + ',0.3)'
+                        });
+                    }
+                    
+                    // Draw all stored flowers
+                    for (var i = 0; i < flowers.length; i++) {
+                        drawFlower(flowers[i].x, flowers[i].y, flowers[i].radius, flowers[i].color);
+                    }
+                    
+                    animationStep++;
+                }
+                // Step 4: Show text
+                else if (!flowersDrawn) {
+                    flowersDrawn = true;
+                    document.getElementById('code').style.display = 'block';
+                    typeWriter();
+                    return; // Stop animation loop
+                }
+                
+                requestAnimationFrame(animate);
             }
-            while (seed.canMove()) {
-                seed.move(0, 2);
-                foot.draw();
-                $await(Jscex.Async.sleep(10));
+            
+            // Typewriter effect
+            function typeWriter() {
+                var codeElement = document.getElementById('code');
+                codeElement.innerHTML = '';
+                var tempDiv = document.createElement('div');
+                tempDiv.innerHTML = textContent;
+                var textNodes = tempDiv.querySelectorAll('.say');
+                var currentLine = 0;
+                var currentChar = 0;
+                
+                function type() {
+                    if (currentLine < textNodes.length) {
+                        var currentText = textNodes[currentLine].textContent;
+                        if (currentChar === 0) {
+                            var span = document.createElement('span');
+                            span.className = 'say';
+                            codeElement.appendChild(span);
+                            codeElement.appendChild(document.createElement('br'));
+                        }
+                        
+                        var spans = codeElement.querySelectorAll('.say');
+                        var activeSpan = spans[spans.length - 1];
+                        
+                        if (currentChar < currentText.length) {
+                            activeSpan.textContent = currentText.substring(0, currentChar + 1) + '_';
+                            currentChar++;
+                            setTimeout(type, 75);
+                        } else {
+                            activeSpan.textContent = currentText;
+                            currentLine++;
+                            currentChar = 0;
+                            setTimeout(type, 200);
+                        }
+                    } else {
+                        setTimeout(function() {
+                            document.getElementById('clock-box').style.display = 'block';
+                            fadeIn(document.getElementById('clock-box'));
+                        }, 2000);
+                    }
+                }
+                
+                type();
             }
-        }));
-
-        var growAnimate = eval(Jscex.compile("async", function () {
-            do {
-                tree.grow();
-                $await(Jscex.Async.sleep(10));
-            } while (tree.canGrow());
-        }));
-
-        var flowAnimate = eval(Jscex.compile("async", function () {
-            do {
-                tree.flower(2);
-                $await(Jscex.Async.sleep(10));
-            } while (tree.canFlower());
-        }));
-
-        var moveAnimate = eval(Jscex.compile("async", function () {
-            tree.snapshot("p1", 240, 0, 610, 680);
-            while (tree.move("p1", 500, 0)) {
-                foot.draw();
-                $await(Jscex.Async.sleep(10));
+            
+            function fadeIn(element) {
+                var opacity = 0;
+                element.style.opacity = 0;
+                var timer = setInterval(function() {
+                    if (opacity >= 1) {
+                        clearInterval(timer);
+                    }
+                    element.style.opacity = opacity;
+                    opacity += 0.1;
+                }, 50);
             }
-            foot.draw();
-            tree.snapshot("p2", 500, 0, 610, 680);
-
-            canvas.parent().css("background", "url(" + tree.toDataURL('image/png') + ")");
-            canvas.css("background", "#ffe");
-            $await(Jscex.Async.sleep(300));
-            canvas.css("background", "none");
-        }));
-
-        var textAnimate = eval(Jscex.compile("async", function () {
-            $("#code").show().typewriter();
-        }));
-	    
-        var runAsync = eval(Jscex.compile("async", function () {
-            $await(seedAnimate());
-            $await(growAnimate());
-            $await(flowAnimate());
-            $await(moveAnimate());
-            textAnimate().start();
-        }));
-
-        runAsync().start();
-    })();
+            
+            // Click to start
+            function startAnimation() {
+                var audio = document.getElementById('myAudio');
+                audio.play().catch(function() {
+                    // Audio play might be blocked by browser
+                });
+                canvas.style.cursor = 'default';
+                animate();
+                canvas.removeEventListener('click', startAnimation);
+            }
+            
+            canvas.addEventListener('click', startAnimation);
+            
+            canvas.style.cursor = 'pointer';
+            drawHeart(heart.x, heartY, heartSize, heart.color);
+        })();
     </script>
 </body>
 </html>
